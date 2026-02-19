@@ -18,14 +18,15 @@ jobs:
           java-version: 21
           cache: gradle
 
-      # Fix permissions + Windows line endings
-      - name: Prepare Gradle Wrapper
+      - name: Fix gradlew
         run: |
-          chmod +x gradlew
+          ls -la
+          file gradlew
           sed -i 's/\r$//' gradlew
+          chmod 755 gradlew
 
       - name: Build
-        run: ./gradlew build --no-daemon
+        run: bash ./gradlew build --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
