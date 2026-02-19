@@ -34,7 +34,7 @@ jobs:
           head -5 gradlew
 
       - name: Build mod
-        run: bash gradlew build --no-daemon
+        run: java -jar gradle/wrapper/gradle-wrapper.jar build --no-daemon
         env:
           GRADLE_OPTS: "-Xmx2g"
 
