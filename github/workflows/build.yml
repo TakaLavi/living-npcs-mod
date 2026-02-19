@@ -1,0 +1,86 @@
+name: Build Living NPCs Mod
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  # Also allows you to manually trigger the build from GitHub's UI
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Check out your code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Java 21 (required for Minecraft 1.21.1)
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # 3. Cache Gradle files so builds are faster after the first one
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # 4. Make gradlew executable
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 5. Download the Gradle wrapper jar (this is what was missing on Windows)
+      - name: Download Gradle wrapper jar
+        run: |
+          mkdir -p gradle/wrapper
+          curl -sL "https://github.com/gradle/gradle/raw/v8.8.0/gradle/wrapper/gradle-wrapper.jar" \
+               -o gradle/wrapper/gradle-wrapper.jar
+          echo "Gradle wrapper jar downloaded successfully"
+          ls -lh gradle/wrapper/
+
+      # 6. Build the mod
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+        env:
+          GRADLE_OPTS: "-Xmx2g"
+
+      # 7. Show what was built
+      - name: List build outputs
+        run: |
+          echo "=== Build outputs ==="
+          ls -lh build/libs/ 2>/dev/null || echo "No libs folder found"
+          find build/libs -name "*.jar" 2>/dev/null
+
+      # 8. Upload the JAR as a downloadable artifact
+      #    Go to: Actions tab → your build → "Artifacts" section at the bottom
+      - name: Upload mod JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-npcs-mod-jar
+          path: |
+            build/libs/*.jar
+            !build/libs/*-dev.jar
+            !build/libs/*-sources.jar
+          retention-days: 30
+          if-no-files-found: warn
+
+      # 9. Print success message
+      - name: Build complete
+        run: |
+          echo "✅ Build successful!"
+          echo "📦 Download your JAR from the Actions tab → this run → Artifacts section"
+          JAR=$(find build/libs -name "living-npcs-*.jar" ! -name "*-dev*" ! -name "*-sources*" | head -1)
+          if [ -n "$JAR" ]; then
+            echo "🎮 JAR file: $JAR"
+            echo "📏 Size: $(du -h "$JAR" | cut -f1)"
+          fi
