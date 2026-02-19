@@ -9,7 +9,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -25,16 +26,18 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
 
-      - name: Setup Gradle
+      - name: Install Gradle 8.8
         run: |
-          mkdir -p gradle/wrapper
-          curl -sL "https://github.com/gradle/gradle/raw/v8.8.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
-          chmod +x gradlew
-          ls -la gradlew
-          head -5 gradlew
+          wget -q https://services.gradle.org/distributions/gradle-8.8-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp/gradle-install
+          sudo mv /tmp/gradle-install/gradle-8.8 /opt/gradle
+          echo "/opt/gradle/bin" >> $GITHUB_PATH
+
+      - name: Verify Gradle
+        run: gradle --version
 
       - name: Build mod
-        run: java -jar gradle/wrapper/gradle-wrapper.jar build --no-daemon
+        run: gradle build --no-daemon
         env:
           GRADLE_OPTS: "-Xmx2g"
 
