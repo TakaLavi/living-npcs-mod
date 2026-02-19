@@ -16,7 +16,6 @@ repositories {
 
 loom {
 	splitEnvironmentSourceSets()
-
 	mods {
 		"livingnpcs" {
 			sourceSet sourceSets.main
@@ -51,6 +50,16 @@ java {
 
 jar {
 	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
+		rename { "${it}_${project.base.archivesName.get()}" }
 	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
+			from components.java
+		}
+	}
+	repositories {}
 }
